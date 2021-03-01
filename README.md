@@ -1,5 +1,6 @@
 # sonos_anti_abuse
-This is a script that monitors Sonos speakers and skips tracks automatically.
+A simple script that monitors Sonos speakers and skips annoying tracks automatically. This is achieved by checking the track title and comparing it to the contents in annoying.txt. If any words in the title match any word in the file, the track is skipped.You can edit annoying.txt and add any words you want to monitor, or simply use your own file with the --wordfile switch.
+
 
 ***Basic usage:*** 
     
@@ -14,16 +15,16 @@ This is a script that monitors Sonos speakers and skips tracks automatically.
 Example 1:
       
 
-`python3 sonos_track_check.py --host 192.168.0.2`
+`python3 sonos_anti_abuse.py --host 192.168.0.2`
 
 
 Example 2:      
 
 
-`python3 sonos_track_check.py --host all --wordfile christmas.txt`
+`python3 sonos_anti_abuse.py --host all --wordfile christmas.txt`
 
 
 Example 3:      
 
 
-`python3 sonos_track_check.py --host all --volume_correct` 
+`python3 sonos_anti_abuse.py --host all --volume_correct` 
