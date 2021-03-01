@@ -32,9 +32,9 @@ def main(argv):
     --scan          	Finds the players and their IPs in your network.
     --volume_correct    This will turn down the volume if it's over 75.  
     
-    Example 1:      python3 sonos_track_check.py --host 192.168.0.2
-    Example 2:      python3 sonos_track_check.py --host all --wordfile christmas.txt
-    Example 3:      python3 sonos_track_check.py --host all --volume_correct
+    Example 1:      python3 sonos_anti_abuse.py --host 192.168.0.2
+    Example 2:      python3 sonos_anti_abuse.py --host all --wordfile christmas.txt
+    Example 3:      python3 sonos_anti_abuse.py --host all --volume_correct
 
     """
 
