@@ -1,3 +1,4 @@
+import argparse
 import soco
 from soco import SoCo
 import threading
@@ -6,7 +7,7 @@ import csv
 import datetime
 import logging
 import sys
-import getopt
+#import getopt
 import re
 
 file_handler = logging.FileHandler('track_log.txt', 'a')
@@ -16,60 +17,108 @@ log = logging.getLogger('mylogger')
 log.addHandler(file_handler)
 log.setLevel('INFO')
 
-def main(argv):
-    event = threading.Event()
-    host = ""
-    hosts = []
-    wordlist = "annoying.txt"
-    volume_correct_state = False    
-    helper = """
-    sonos_anti_abuse.py basic usage: 
-    
-    --host      	Ip/hostname of player. If you pass "all", the script will monitor 
-			every player in your network.
-    --wordfile  	Defaults to annoying.txt, but this can be whatever file you want. 
-                	Just put each keyword on a new line.
-    --scan          	Finds the players and their IPs in your network.
-    --volume_correct    This will turn down the volume if it's over 75.  
-    
-    Example 1:      python3 sonos_anti_abuse.py --host 192.168.0.2
-    Example 2:      python3 sonos_anti_abuse.py --host all --wordfile christmas.txt
-    Example 3:      python3 sonos_anti_abuse.py --host all --volume_correct
+my_parser = argparse.ArgumentParser(
+    prog='sonos_anti_abuse',
+    usage='%(prog)s [options]',
+    description='Monitors the Sonos queue and skips tracks based on words in their titles.'
+    )
 
+#my_parser.add_argument(
+#    '--host',
+#    help='The IP address of the player you want to monitor, or "all" for every player on the network.',
+#)
+
+my_parser.add_argument(
+    '--wordfile',
+    '-w',
+    default='annoying.txt',
+    help='Defaults to annoying.txt, but this can be whatever file you want. Just put each keyword on a new line.'
+)
+
+my_parser.add_argument(
+    '--volume_correct',
+    '-v',
+    action='store_true',
+    help='This will turn down the volume if it is over 75.'
+)
+
+
+subparsers = my_parser.add_subparsers(dest='subcommand')
+
+parser_monitor = subparsers.add_parser(
+    'monitor',
+    help='Select IP to monitor, or "all" for all players on the network.'
+)
+
+parser_monitor.add_argument(
+    'host',
+    help='host'
+)
+
+parser_scanner = subparsers.add_parser(
+    'scan',
+    help='Returns the IP addresses of all players on the network.'
+)
+
+my_args = vars(my_parser.parse_args())
+
+def subcommand(args=[], parent=subparsers):
+    def decorator(func):
+        parser = parent.add_parser(func.__name__, description=func.__doc__)
+        for arg in args:
+            parser.add_argument(*arg[0], **arg[1])
+        parser.set_defaults(func=func)
+    return decorator
+
+def argument(*name_or_flags, **kwargs):
+    return ([*name_or_flags], kwargs)
+
+def title_checker(track, skip_list):
+    ## Using .isalnum()
+    track_name = ''.join(e.lower() for e in track if e.isalnum())
+    res = [word for word in skip_list if word in track_name]
+    return bool(res)
+
+def discover_extended():
+    """ 
+    I couldn't find a function in SoCo of returning the IP of a player
+    so I had to write this.
     """
+    players = {}
+    for player in list(soco.discover()):
+        ip = str(player).split()[4].strip(">")
+        players.update({ ip : player.player_name })
+    return players
+
+@subcommand([argument("name", help="Name")])
+def name(args):
+    print(args.name)
+
+@subcommand()
+def scan(args):
+    """
+    Prints IP addresses of players.
+    """
+    players = discover_extended()
+    for player in players:
+        print(player + "\t" + players[player])
+    sys.exit()
+
+@subcommand()
+def monitor(argv):
+    event = threading.Event()
 
     try:
-        opts, args = getopt.getopt(argv, "", ["help", "host=", "wordfile=", "scan", "volume_correct"])
-    except getopt.GetoptError:
-        print(helper)
-        sys.exit(2)
-
-    for opt, arg in opts:
-        if opt == '--help':
-            print(helper)
-            sys.exit()
-        elif opt == '--host':
-            host = arg
-        elif opt == '--wordfile':
-            wordlist = arg
-        elif opt == '--volume_correct':
-            volume_correct_state = True
-        elif opt == '--scan':
-            players = discover_extended()
-            for player in players:
-                print(player + "\t" + players[player])
-            sys.exit()
-    try:
-        file = open(wordlist, 'r')
+        file = open(my_args['wordfile'], 'r')
         skip_list = [word.strip('\n') for word in file.readlines()]
     except FileNotFoundError:
-        print("File: " + wordlist + " not found!")
+        print("File: " + my_args['wordfile'] + " not found!")
         sys.exit()
 
-    if not host:
+    if not my_args['host']:
         print("Please specify a valid hostname/ip with --host")
         sys.exit()
-    elif host == "all":
+    elif my_args['host'] == "all":
         threads = []
         print("---" + "\n")
         print("Starting Sonos Anti Abuse Script on speakers:" + "\n")
@@ -83,7 +132,7 @@ def main(argv):
                 x = threading.Thread(
                     target=track_skipper, 
                     args=(player, skip_list,), 
-                    kwargs={'volume_correct' : volume_correct_state}
+                    kwargs={'volume_correct' : my_args['volume_correct']}
                 )
                 threads.append(x)
                 x.daemon = True
@@ -96,14 +145,14 @@ def main(argv):
     else:
         print("---" + "\n")
         print("Starting Sonos Anti Abuse Script on speakers:" + "\n")
-        print(" * " + soco.SoCo(host).player_name)
+        print(" * " + soco.SoCo(my_args['host']).player_name)
         print("Quit with CTRL+C")
         print("---" + "\n")
         try:
             track_skipper(
-                soco.SoCo(host), 
+                soco.SoCo(my_args['host']), 
                 skip_list, 
-                volume_correct=volume_correct_state
+                volume_correct=my_args['volume_correct']
             )
         except KeyboardInterrupt:
             print("\n" + "Exiting.")
@@ -176,24 +225,11 @@ def track_skipper(player, skiplist, skip_mode="title", volume_correct=False):
         old_track_title = track_title
         time.sleep(2)
 
-def title_checker(track, skip_list):
-    ## Using .isalnum()
-    track_name = ''.join(e.lower() for e in track if e.isalnum())
-    res = [word for word in skip_list if word in track_name]
-    return bool(res)
-
-def discover_extended():
-    """ 
-    I couldn't find a function in SoCo of returning the IP of a player
-    so I had to write this.
-    """
-    players = {}
-    for player in list(soco.discover()):
-        ip = str(player).split()[4].strip(">")
-        players.update({ ip : player.player_name })
-    return players
-    
-
 if __name__ == "__main__":  
-    main(sys.argv[1:])
+    #main(sys.argv[1:])
+    args = my_parser.parse_args()
+    if args.subcommand is None:
+        my_parser.print_help()
+    else:
+        args.func(args)
 
