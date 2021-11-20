@@ -4,18 +4,18 @@ A simple script that monitors Sonos speakers and skips annoying tracks automatic
 
 ## Basic usage
     
-    monitor      		        Ip/hostname of player. If you pass "all", the script will monitor 
-				                every player in your network.
+    monitor             Ip/hostname of player. If you pass "all", the script will monitor 
+				        every player in your network.
 
 
-        -w, -wordfile  		    Defaults to annoying.txt, but this can be whatever file you want. 
+        -w, -wordfile       Defaults to annoying.txt, but this can be whatever file you want. 
                 		        Just put each keyword on a new line.
 
         -v, --volume_correct    This will turn down the volume if it's over 75.
 
 
     scan                        This will print all players on the network with IP addresses.
-    
+
 
 Example 1:
       
