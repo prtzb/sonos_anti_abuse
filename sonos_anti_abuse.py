@@ -1,17 +1,16 @@
 # Inspired by:
-# https://mike.depalatis.net/blog/simplifying-argparse.html
+# https://chase-seibert.github.io/blog/2014/03/21/python-multilevel-argparse.html
 
+# std library
 import argparse
-import soco
-from soco import SoCo
-import threading
-import time
-import csv
-import datetime
 import logging
 import sys
-#import getopt
-import re
+import threading
+import time
+
+# 3rd party modules
+import soco
+from soco import SoCo
 
 file_handler = logging.FileHandler('track_log.txt', 'a')
 formatter = logging.Formatter('%(asctime)s \t %(message)s')
@@ -20,121 +19,77 @@ log = logging.getLogger('mylogger')
 log.addHandler(file_handler)
 log.setLevel('INFO')
 
-# my_parser = argparse.ArgumentParser(
-#     prog='sonos_anti_abuse',
-#     usage='%(prog)s [options]',
-#     description='Monitors the Sonos queue and skips tracks based on words in their titles.'
-#     )
-
-#my_parser.add_argument(
-#    '--host',
-#    help='The IP address of the player you want to monitor, or "all" for every player on the network.',
-#)
-
-# my_parser.add_argument(
-#     '--wordfile',
-#     '-w',
-#     default='annoying.txt',
-#     help='Defaults to annoying.txt, but this can be whatever file you want. Just put each keyword on a new line.'
-# )
-
-# my_parser.add_argument(
-#     '--volume_correct',
-#     '-v',
-#     action='store_true',
-#     help='This will turn down the volume if it is over 75.'
-# )
-
-
-# subparsers = my_parser.add_subparsers(dest='subcommand')
-
-# parser_monitor = subparsers.add_parser(
-#     'monitor',
-#     help='Select IP to monitor, or "all" for all players on the network.'
-# )
-
-# parser_monitor.add_argument(
-#     'host',
-#     help='host'
-# )
-
-# parser_monitor.add_argument(
-#     '--wordfile',
-#     '-w',
-#     default='annoying.txt',
-#     help='Defaults to annoying.txt, but this can be whatever file you want. Just put each keyword on a new line.'
-# )
-
-
-# parser_scanner = subparsers.add_parser(
-#     'scan',
-#     help='Returns the IP addresses of all players on the network.'
-# )
-
-# my_args = vars(my_parser.parse_args())
-
-# def subcommand(args=[], parent=subparsers):
-#     def decorator(func):
-#         parser = parent.add_parser(func.__name__, description=func.__doc__)
-#         for arg in args:
-#             parser.add_argument(*arg[0], **arg[1])
-#         parser.set_defaults(func=func)
-#     return decorator
-
-# def argument(*name_or_flags, **kwargs):
-#     return ([*name_or_flags], kwargs)
-
-# @subcommand([argument("name", help="Name")])
-# def name(args):
-#     print(args.name)#
-
 class SonosAntiAbuse(object):
+    """
+    Main class.
+    """
 
     def __init__(self):
-        parser = argparse.ArgumentParser(
+        self.parser = argparse.ArgumentParser(
             prog='sonos_anti_abuse',
             usage='%(prog)s [options]',
             description='Monitors the Sonos queue and skips tracks based on words in their titles.'
             )
-        parser.add_argument('command', help='Subcommand to run')
-        args = parser.parse_args(sys.argv[1:2])
+        self.parser.add_argument('command', help='Subcommand to run')
+        self.subparsers = self.parser.add_subparsers()
+        self.monitor_parser = self.subparsers.add_parser(
+            'monitor',
+            help='Monitors a player on the network'
+            )
+        self.scanner_parser = self.subparsers.add_parser(
+            'scan',
+            help='Returns a list of players/ip addresses on the network.'
+        )
+        args = self.parser.parse_args(sys.argv[1:2])
         if not hasattr(self, args.command):
-            print('Unrecognized command')
-            parser.print_help()
-            exit(1)
+           print('Unrecognized command')
+           self.parser.print_help()
+           exit(1)
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)()
 
     def monitor(self):
-        parser = argparse.ArgumentParser(
-            'monitor',
-            description='Monitors a player on the network'
-            )
-        parser.add_argument(
+        """
+        Method containing the monitor subcommand.
+        """
+
+        self.monitor_parser.add_argument(
             'player', 
             metavar='<player>', 
-            help='The IP address for a player, or "all" every player on the network'
+            help='The IP address for a player, or "all" for every player on the network'
             )
-        parser.add_argument(
+        self.monitor_parser.add_argument(
             '--wordfile',
             '-w',
+            metavar='<file>',
             default='annoying.txt',
             help='Defaults to annoying.txt, but this can be whatever file you want. Just put each keyword on a new line.'
             )
-        parser.add_argument(
+        self.monitor_parser.add_argument(
             '--volume_correct',
             '-v',
-            action='store_true',
-            help='This will turn down the volume if it is over 75.'
+            metavar='<int>',
+            type=int,
+            help='This will turn down the volume if over the specified value.'
         )
+        args = self.monitor_parser.parse_args(sys.argv[2:])
+        
+        return track_monitor(args)
 
-        args = parser.parse_args(sys.argv[2:])
-        print(args)
-        #print('Running on host ' + args.player)
-
-
+    def scan(self):
+        """
+        Method containing the scan subcommand.
+        """
+        if '-h' in sys.argv or '--help' in sys.argv:
+            print(sys.argv)
+            self.scanner_parser.print_help()
+            exit(1)
+        self.scanner_parser.parse_args([scanner()])
 
 def title_checker(track, skip_list):
+    """
+    Compares the track title to skip_list and returns True if a match is found.
+    """
     ## Using .isalnum()
     track_name = ''.join(e.lower() for e in track if e.isalnum())
     res = [word for word in skip_list if word in track_name]
@@ -151,10 +106,7 @@ def discover_extended():
         players.update({ ip : player.player_name })
     return players
 
-
-
-#@subcommand()
-def scan(args):
+def scanner():
     """
     Prints IP addresses of players.
     """
@@ -163,15 +115,21 @@ def scan(args):
         print(player + "\t" + players[player])
     sys.exit()
 
-#@subcommand()
-def monitor(argv):
+def track_monitor(argv):
+    """
+    Main function for monitoring the queue.
+    """
 
-    print(argv)
-    event = threading.Event()
+    threading.Event()
 
     wordfile = argv.wordfile
     host = argv.player
-    volume_correct = argv.volume_correct
+    
+    # Hack to fix non specified value
+    try:
+        volume_correct = int(argv.volume_correct)
+    except TypeError:
+        volume_correct = False
 
     try:
         file = open(wordfile, 'r')
@@ -180,16 +138,15 @@ def monitor(argv):
         print("File: " + wordfile + " not found!")
         sys.exit()
 
-    #if not host:
-    #    print("Please specify a valid hostname/ip with --host")
-    #    sys.exit()
     if host == "all":
         threads = []
+        players = list(soco.discover())
         print("---" + "\n")
         print("Starting Sonos Anti Abuse Script on speakers:" + "\n")
-        players = list(soco.discover())
         for player in players:
             print(" * " + player.player_name)
+        print("\n")
+        print("Wordfile: " + wordfile)
         print("Quit with CTRL+C")
         print("---" + "\n")
         try:
@@ -208,25 +165,31 @@ def monitor(argv):
             print("\n" + "Exiting.")
             sys.exit()      
     else:
+        player = soco.SoCo(host)
         print("---" + "\n")
         print("Starting Sonos Anti Abuse Script on speakers:" + "\n")
-        print(" * " + soco.SoCo(host.player_name)
+        print(" * " + player.player_name)
+        print("\n")
+        print("Wordfile: " + wordfile + "\n")
         print("Quit with CTRL+C")
         print("---" + "\n")
         try:
             track_skipper(
-                soco.SoCo(my_args['host']), 
+                player, 
                 skip_list, 
-                volume_correct=my_args['volume_correct']
+                volume_correct=volume_correct
             )
         except KeyboardInterrupt:
             print("\n" + "Exiting.")
             sys.exit()
         except ValueError:
-            print("Please specify a valid hostname/ip with --host")
+            print("Please specify a valid hostname/ip.")
             sys.exit()
 
 def track_skipper(player, skiplist, skip_mode="title", volume_correct=False):
+    """
+    This function contains the logic for which track to skip and when.
+    """
     track_title = ""
     transport_state = ""
     # These two needs to have a different value than their counterparts above
@@ -278,8 +241,8 @@ def track_skipper(player, skiplist, skip_mode="title", volume_correct=False):
             else:
                 logstr = track_str + "\t" + "PLAYED"
 
-        if volume_correct and player.volume > 60:
-            player.volume = 30
+        if volume_correct and volume_correct < player.volume:
+            player.volume = volume_correct
             print(track_str + "\t" + "VOLUME CORRECTED")
             logstr = track_str + "\t" + "VOLUME CORRECTED"
     
@@ -292,4 +255,3 @@ def track_skipper(player, skiplist, skip_mode="title", volume_correct=False):
 
 if __name__ == '__main__':
     SonosAntiAbuse()
-
