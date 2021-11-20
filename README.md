@@ -18,19 +18,19 @@ A simple script that monitors Sonos speakers and skips annoying tracks automatic
 Example 1:
       
 
-`python3 sonos_anti_abuse.py --host 192.168.0.2`
+`python3 sonos_anti_abuse.py monitor 192.168.0.2`
 
 
 Example 2:      
 
 
-`python3 sonos_anti_abuse.py --host all --wordfile christmas.txt`
+`python3 sonos_anti_abuse.py monitor all --wordfile christmas.txt`
 
 
 Example 3:      
 
 
-`python3 sonos_anti_abuse.py --host all --volume_correct` 
+`python3 sonos_anti_abuse.py monitor all --volume_correct` 
 
 
 ## Docker
