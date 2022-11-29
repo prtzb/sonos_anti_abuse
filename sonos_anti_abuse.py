@@ -132,12 +132,12 @@ def track_monitor(argv):
         volume_correct = False
 
     try:
-        file = open(wordfile, 'r')
+        skip_file = open(wordfile, 'r')
     except FileNotFoundError:
         print("File: " + wordfile + " not found!")
         sys.exit()
 
-    skip_list = [word.strip('\n') for word in file.readlines()]
+    skip_list = [word.strip('\n') for word in skip_file.readlines()]
     skip_list[:] = [word for word in skip_list if word]
 
     if host == "all":
