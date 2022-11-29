@@ -133,10 +133,12 @@ def track_monitor(argv):
 
     try:
         file = open(wordfile, 'r')
-        skip_list = [word.strip('\n') for word in file.readlines()]
     except FileNotFoundError:
         print("File: " + wordfile + " not found!")
         sys.exit()
+
+    skip_list = [word.strip('\n') for word in file.readlines()]
+    skip_list[:] = [word for word in skip_list if word]
 
     if host == "all":
         threads = []
