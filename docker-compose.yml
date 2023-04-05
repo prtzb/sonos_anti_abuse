@@ -1,0 +1,18 @@
+---
+version: "3.8"
+
+services:
+  sonos_anti_abuse:
+    build:
+      context: .
+    image: sonos_anti_abuse
+    container_name: sonos_anti_abuse
+    restart: always
+    network_mode: host
+    stdin_open: true
+    tty: true
+    command: ["monitor"]
+    volumes:
+      - type: bind
+        source: ./annoying
+        target: /home/sonosantiabuse/annoying
