@@ -1,6 +1,6 @@
 # Sonos Anti Abuse
 
-Do you have annoying siblings/roommates/co-workers who think it's funny to put stupid songs in your Sonos queue? Or are you like me a hip-hop fan who's just not interested in acapella versions, skits and other tracks that rappers like to put on their albums? Then, this is the script for you!
+Do you have annoying siblings/friends/co-workers who puts stupid songs in your Sonos queue? Or are you like me a hip-hop fan who's just not interested in acapella versions, skits and other tracks that rappers like to put on their albums? Then, this is the script for you!
 
 `sonos_anti_abuse` is a simple script written in Python that monitors Sonos speakers and skips annoying tracks automatically. This is achieved by checking the track title and comparing it to the contents in text files that you define. If any words in the title match any word in one of the files, the track is skipped. You can create your own text files and add any words you want to monitor.
 
