@@ -139,8 +139,9 @@ def generate_skip_list(skipfile_directory: str) -> set:
     skip_list = set()
     try:
         for f in os.listdir(skipfile_directory):
-            with open(f"{skipfile_directory}/{f}", 'r') as skip_file:
-                skip_list.add(word.strip('\n') for word in skip_file.readlines())
+            if os.path.isfile(os.path.join(skipfile_directory, f)) and ".annoying" in f:
+                with open(f"{skipfile_directory}/{f}", 'r') as skip_file:
+                    skip_list.add(word.strip('\n') for word in skip_file.readlines())
     except FileNotFoundError:
         print(f"Directory: {skipfile_directory} not found!")
         sys.exit(1)
@@ -171,7 +172,8 @@ def track_monitor(player_list: set, volume_correct: int, skipfile_directory: str
     print("Skipfiles:")
     print(f"{skipfile_directory}/")
     for f in os.listdir(skipfile_directory)[:-1]:
-        print(f" ├── {f}")
+        if os.path.isfile(os.path.join(skipfile_directory, f)) and ".annoying" in f:
+            print(f" ├── {f}")
     print(f" └── {os.listdir(skipfile_directory)[-1]} ")
     print("\n")
     print("Quit with CTRL+C")
