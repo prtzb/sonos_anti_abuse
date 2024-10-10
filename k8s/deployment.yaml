@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonos-anti-abuse
+  namespace: sonos-anti-abuse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonos-anti-abuse
+  template:
+    metadata:
+      labels:
+        app: sonos-anti-abuse
+    spec:
+      hostNetwork: true
+      containers:
+      - name: sonos-anti-abuse
+        image: ghcr.io/prtzb/sonos_anti_abuse/sonosantiabuse:v0.1.1
+        args: ["monitor"]
+        volumeMounts:
+        - name: sonos-anti-abuse-config-volume
+          mountPath: /home/sonosantiabuse/annoying
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 2Gi
+            cpu: "1"
+      volumes:
+      - name: sonos-anti-abuse-config-volume
+        configMap:
+          name: sonos-anti-abuse-configmap

@@ -109,3 +109,13 @@ To watch the log in real time, run this:
 ```bash
 docker attach sonos_anti_abuse
 ```
+
+## Kubernetes
+
+```bash
+kubectl apply -f ./k8s/
+```
+
+Edit `configmap.yaml` as necessary.
+
+Of course, this will only work on clusters where the nodes reside on the same subnet as the Sonos system.
